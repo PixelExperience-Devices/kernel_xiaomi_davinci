@@ -90,8 +90,6 @@
 #define GTP_GAME_CMD      0x0E
 #define GTP_EXIT_GAME_CMD 0x0F
 
-#define CONFIG_TOUCHSCREEN_GOODIX_DEBUG_FS
-
 /*
  * struct goodix_module - external modules container
  * @head: external modules list
@@ -694,8 +692,8 @@ static inline u32 checksum_be32(u8 *data, u32 size)
 #define EMEMCMP					1003
 
 /* log macro */
-#define ts_info(fmt, arg...)	pr_info("[GTP9886-INF][%s:%d] "fmt"\n", __func__, __LINE__, ##arg)
-#define	ts_err(fmt, arg...)		pr_err("[GTP9886-ERR][%s:%d] "fmt"\n", __func__, __LINE__, ##arg)
+#define ts_info(fmt, arg...)	((void)0)
+#define	ts_err(fmt, arg...)	((void)0)
 #define boot_log(fmt, arg...)	g_info(fmt, ##arg)
 #define ts_debug(fmt, arg...)	do {} while (0)
 
