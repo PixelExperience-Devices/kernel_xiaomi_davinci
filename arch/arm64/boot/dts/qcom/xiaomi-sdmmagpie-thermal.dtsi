@@ -1,0 +1,11 @@
+&thermal_zones {
+	lmh-dcvs-00 {
+		status = "disabled";
+	};
+	lmh-dcvs-01 {
+		status = "disabled";
+	};
+	nvm-therm-adc {
+		status = "disabled";
+	};
+};

@@ -1,0 +1,47 @@
+#include "sdmmagpie-sde-display.dtsi"
+
+&mdss_mdp {
+	clock-rate = <0 0 0 0 344000000 19200000 200000000
+	  200000000>;
+	qcom,sde-num-mnoc-ports = <1>;
+	qcom,sde-axi-bus-width = <32>;
+};
+
+&dsi_panel_pwr_supply {
+	qcom,panel-supply-entry@2 {
+		/delete-property/ qcom,supply-post-on-sleep;
+	};
+};
+
+&dsi_panel_pwr_supply_labibb_amoled {
+	qcom,panel-supply-entry@0 {
+		qcom,supply-min-voltage = <1880000>;
+		qcom,supply-max-voltage = <1880000>;
+	};
+};
+
+&dsi_sim_vid_display {
+	qcom,dsi-display-active;
+};
+
+&dsi_ss_fhd_ea_f10_cmd {
+	qcom,panel-supply-entries = <&dsi_panel_pwr_supply_labibb_amoled>;
+	qcom,mdss-dsi-bl-pmic-control-type = "bl_ctrl_dcs";
+	qcom,mdss-dsi-bl-min-level = <2>;
+	qcom,mdss-dsi-bl-max-level = <2047>;
+	qcom,mdss-dsi-mode-sel-gpio-state = "single_port";
+	//qcom,panel-mode-gpio = <&tlmm 7 0>;
+	qcom,platform-te-gpio = <&tlmm 10 0>;
+	qcom,platform-reset-gpio = <&pm6150l_gpios 9 0>;
+};
+
+&dsi_ss_fhd_eb_f10_cmd {
+	qcom,panel-supply-entries = <&dsi_panel_pwr_supply_labibb_amoled>;
+	qcom,mdss-dsi-bl-pmic-control-type = "bl_ctrl_dcs";
+	qcom,mdss-dsi-bl-min-level = <256>;
+	qcom,mdss-dsi-bl-max-level = <4095>;
+	qcom,mdss-dsi-mode-sel-gpio-state = "single_port";
+	//qcom,panel-mode-gpio = <&tlmm 7 0>;
+	qcom,platform-te-gpio = <&tlmm 10 0>;
+	qcom,platform-reset-gpio = <&pm6150l_gpios 9 0>;
+};

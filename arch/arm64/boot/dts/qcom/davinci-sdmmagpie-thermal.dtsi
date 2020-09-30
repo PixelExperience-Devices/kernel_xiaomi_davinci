@@ -1,0 +1,42 @@
+&pm6150_adc_tm {
+	/delete-node/ rf_pa0_therm;
+	/delete-node/ rf_pa1_therm;
+
+	pa_therm1 {
+		reg = <ADC_AMUX_THM2_PU2>;
+		qcom,ratiometric;
+		qcom,hw-settle-time = <200>;
+	};
+
+	emmc_ufs_therm {
+		reg = <ADC_AMUX_THM3_PU2>;
+		qcom,ratiometric;
+		qcom,hw-settle-time = <200>;
+	};
+};
+
+&pm6150_vadc {
+	/delete-node/ rf_pa0_therm;
+	/delete-node/ rf_pa1_therm;
+
+	pa_therm1 {
+		reg = <ADC_AMUX_THM2_PU2>;
+		label = "pa_therm1";
+		qcom,ratiometric;
+		qcom,hw-settle-time = <200>;
+		qcom,pre-scaling = <1 1>;
+	};
+
+	emmc_ufs_therm {
+		reg = <ADC_AMUX_THM3_PU2>;
+		label = "emmc_ufs_therm";
+		qcom,ratiometric;
+		qcom,hw-settle-time = <200>;
+		qcom,pre-scaling = <1 1>;
+	};
+};
+
+&pm6150l_vadc {
+    /delete-property/ pinctrl-names;
+    /delete-property/ pinctrl-0;
+};
