@@ -1,4 +1,4 @@
-/* Copyright (c) 2013-2021, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2013-2020, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -47,7 +47,6 @@
 #define SCM_WDOG_DEBUG_BOOT_PART	0x9
 #define SCM_DLOAD_FULLDUMP		0X10
 #define SCM_EDLOAD_MODE			0X01
-#define SCM_EDLOAD_PCI_MODE		0X04
 #define SCM_DLOAD_CMD			0x10
 #define SCM_DLOAD_MINIDUMP		0X20
 #define SCM_DLOAD_BOTHDUMPS	(SCM_DLOAD_MINIDUMP | SCM_DLOAD_FULLDUMP)
@@ -58,32 +57,16 @@ static bool scm_pmic_arbiter_disable_supported;
 static bool scm_deassert_ps_hold_supported;
 /* Download mode master kill-switch */
 static void __iomem *msm_ps_hold;
-static void __iomem *boot_config;
 static phys_addr_t tcsr_boot_misc_detect;
 static void scm_disable_sdi(void);
-static bool early_pcie_init_enable;
-static unsigned int boot_config_shift;
 
 /*
  * Runtime could be only changed value once.
  * There is no API from TZ to re-enable the registers.
  * So the SDI cannot be re-enabled when it already by-passed.
  */
-static int download_mode;
+static int download_mode = 1;
 static bool force_warm_reboot;
-
-static int in_panic;
-
-static int panic_prep_restart(struct notifier_block *this,
-			      unsigned long event, void *ptr)
-{
-	in_panic = 1;
-	return NOTIFY_DONE;
-}
-
-static struct notifier_block panic_blk = {
-	.notifier_call	= panic_prep_restart,
-};
 
 #ifdef CONFIG_QCOM_DLOAD_MODE
 #define EDL_MODE_PROP "qcom,msm-imem-emergency_download_mode"
@@ -92,6 +75,7 @@ static struct notifier_block panic_blk = {
 #define KASLR_OFFSET_PROP "qcom,msm-imem-kaslr_offset"
 #endif
 
+static int in_panic;
 static struct kobject dload_kobj;
 static int dload_type = SCM_DLOAD_FULLDUMP;
 static void *dload_mode_addr;
@@ -120,6 +104,17 @@ struct reset_attribute {
 
 module_param_call(download_mode, dload_set, param_get_int,
 			&download_mode, 0644);
+
+static int panic_prep_restart(struct notifier_block *this,
+			      unsigned long event, void *ptr)
+{
+	in_panic = 1;
+	return NOTIFY_DONE;
+}
+
+static struct notifier_block panic_blk = {
+	.notifier_call	= panic_prep_restart,
+};
 
 int scm_set_dload_mode(int arg1, int arg2)
 {
@@ -189,11 +184,7 @@ static void enable_emergency_dload_mode(void)
 		mb();
 	}
 
-	if (early_pcie_init_enable)
-		ret = scm_set_dload_mode(SCM_EDLOAD_PCI_MODE, 0);
-	else
-		ret = scm_set_dload_mode(SCM_EDLOAD_MODE, 0);
-
+	ret = scm_set_dload_mode(SCM_EDLOAD_MODE, 0);
 	if (ret)
 		pr_err("Failed to set secure EDLOAD mode: %d\n", ret);
 }
@@ -596,15 +587,13 @@ static int msm_restart_probe(struct platform_device *pdev)
 	struct device *dev = &pdev->dev;
 	struct resource *mem;
 	struct device_node *np;
-	uint32_t read_val;
 	int ret = 0;
-
-	atomic_notifier_chain_register(&panic_notifier_list, &panic_blk);
 
 #ifdef CONFIG_QCOM_DLOAD_MODE
 	if (scm_is_call_available(SCM_SVC_BOOT, SCM_DLOAD_CMD) > 0)
 		scm_dload_supported = true;
 
+	atomic_notifier_chain_register(&panic_notifier_list, &panic_blk);
 	np = of_find_compatible_node(NULL, NULL, DL_MODE_PROP);
 	if (!np) {
 		pr_err("unable to find DT imem DLOAD mode node\n");
@@ -697,35 +686,6 @@ skip_sysfs_create:
 					   "tcsr-boot-misc-detect");
 	if (mem)
 		tcsr_boot_misc_detect = mem->start;
-
-	early_pcie_init_enable = 0;
-	mem = platform_get_resource_byname(pdev, IORESOURCE_MEM, "boot-config");
-	if (mem) {
-		boot_config = devm_ioremap_resource(dev, mem);
-		if (IS_ERR(boot_config)) {
-			pr_err("unable to ioremap boot config offset\n");
-			return PTR_ERR(boot_config);
-		}
-
-		read_val = __raw_readl(boot_config);
-
-		boot_config_shift = 3;
-		np = of_find_compatible_node(NULL, NULL,
-				"qcom,pshold");
-		if (!np) {
-			pr_err("unable to find DT pshold\n");
-		} else {
-			ret = of_property_read_u32(np, "qcom,boot-config-shift",
-					&boot_config_shift);
-			if (ret)
-				pr_err("Unable to read boot_config_shift\n");
-		}
-
-		/* boot_config_shift provides the bit of BOOT_CONFIG register
-		 * which is used as PCIe_EARLY_INIT_EN.
-		 */
-		early_pcie_init_enable = (read_val >> boot_config_shift) & 1;
-	}
 
 	pm_power_off = do_msm_poweroff;
 	arm_pm_restart = do_msm_restart;
